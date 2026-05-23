@@ -165,12 +165,15 @@ Claude responds ────> Stop (primary notification)
 CC waits for input ─> Notification (fallback)
                       ├── Skip if Stop already notified
                       ├── Check if user is watching
-                      └── Send 📢 with notification content
+                      ├── Detect "permission" keyword → send 🔐
+                      └── Otherwise send 📢 with notification content
 
-Tool needs approval ─> PermissionRequest
+Tool needs approval ─> PermissionRequest (if fired)
                        ├── Check if user is watching
                        └── Send 🔐 with tool details
 ```
+
+> **Note**: Claude Code typically sends permission requests via the Notification hook (message: "Claude needs your permission"), not PermissionRequest. The script auto-detects this and uses the 🔐 format.
 
 ### Window matching
 

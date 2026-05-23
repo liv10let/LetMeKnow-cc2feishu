@@ -75,6 +75,8 @@ LetMeKnow 是一个 Claude Code 的 Hook 插件，通过飞书机器人在以下
 
 **触发时机**：Claude Code 需要执行某个工具（如运行命令、修改文件），等待你批准
 
+> **注意**：CC 实际上通过 Notification hook（而非 PermissionRequest hook）发送权限请求，消息内容为 "Claude needs your permission"。脚本会自动检测该关键词并转为 🔐 审批格式。
+
 **消息格式**：
 ```
 🔐 [E:\my-project | discussing auth flow] 需要审批
@@ -165,6 +167,9 @@ CC 回复完成 ──→ Stop hook（主通知）
 
 CC 等待输入 ──→ Notification hook（兜底，约 60 秒后）
                 ├── 检查 "notified"，已处理则跳过
+                ├── 检测消息是否含 "permission"
+                │   ├── 是 → 发送 🔐 审批通知
+                │   └── 否 → 发送 📢 普通通知
                 └── 只在 Stop 未触发时才发送
 ```
 

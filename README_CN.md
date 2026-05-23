@@ -164,12 +164,15 @@ Claude 回复完成 ──> Stop（主通知）
 CC 等待输入 ─────> Notification（兜底）
                     ├── Stop 已通知则跳过
                     ├── 检查用户是否在看
-                    └── 发送 📢，包含通知内容
+                    ├── 检测消息含 "permission" → 发送 🔐
+                    └── 否则发送 📢，包含通知内容
 
-工具需要审批 ────> PermissionRequest
+工具需要审批 ────> PermissionRequest（如触发）
                     ├── 检查用户是否在看
                     └── 发送 🔐，包含工具详情
 ```
+
+> **注意**：CC 实际上通过 Notification hook 发送权限请求（消息为 "Claude needs your permission"），而非 PermissionRequest hook。脚本会自动检测该关键词并转为 🔐 审批格式。
 
 ### 窗口匹配
 

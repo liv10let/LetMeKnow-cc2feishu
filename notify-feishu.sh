@@ -165,11 +165,19 @@ case "$EVENT" in
     SAVED_PROMPT=$(cat "$PROMPT_FILE" 2>/dev/null | cut -c1-200)
     NOTIF=$(echo "$INPUT" | jq -r '.message // .title // ""' 2>/dev/null | cut -c1-200)
 
-    MSG="📢 $(build_header "需要你查看")"
-    [ -n "$SAVED_PROMPT" ] && MSG="${MSG}
+    if echo "$NOTIF" | grep -qi "permission"; then
+        MSG="🔐 $(build_header "需要审批")"
+        [ -n "$SAVED_PROMPT" ] && MSG="${MSG}
 ❓ ${SAVED_PROMPT}"
-    [ -n "$NOTIF" ] && [ "$NOTIF" != "null" ] && MSG="${MSG}
+        MSG="${MSG}
+🦀 允许 / 拒绝 / 始终允许"
+    else
+        MSG="📢 $(build_header "需要你查看")"
+        [ -n "$SAVED_PROMPT" ] && MSG="${MSG}
+❓ ${SAVED_PROMPT}"
+        [ -n "$NOTIF" ] && [ "$NOTIF" != "null" ] && MSG="${MSG}
 🦀 ${NOTIF}"
+    fi
     ;;
 
   permission)
