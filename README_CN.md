@@ -37,6 +37,14 @@ Claude Code 在关键事件时触发 [hook](https://docs.anthropic.com/en/docs/c
 🦀 我已经在 src/auth.ts 中添加了 JWT 中间件，包含 token 校验...
 ```
 
+审批通知的格式略有不同——❓ 显示待审批内容，🦀 显示你的可选操作：
+
+```
+🔐 [E:\my-project | discussing auth flow] 需要审批
+❓ Bash: npm install express
+🦀 允许 / 拒绝 / 始终允许
+```
+
 ### 智能静默
 
 只有**同时满足**以下条件时，通知才会被静默：

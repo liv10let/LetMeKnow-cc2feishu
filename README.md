@@ -38,6 +38,14 @@ Each message includes your original question (❓) and Claude's reply or the not
 🦀 I've added the JWT middleware in src/auth.ts with token validation...
 ```
 
+Permission requests use a different layout — ❓ shows what needs approval, 🦀 shows your options:
+
+```
+🔐 [E:\my-project | discussing auth flow] 需要审批
+❓ Bash: npm install express
+🦀 允许 / 拒绝 / 始终允许
+```
+
 ### Smart suppression
 
 Notifications are suppressed when **both** conditions are met:

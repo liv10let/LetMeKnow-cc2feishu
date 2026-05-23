@@ -78,9 +78,12 @@ LetMeKnow 是一个 Claude Code 的 Hook 插件，通过飞书机器人在以下
 **消息格式**：
 ```
 🔐 [E:\my-project | discussing auth flow] 需要审批
-❓ 帮我安装依赖
-🦀 Bash: npm install express
+❓ Bash: npm install express
+🦀 允许 / 拒绝 / 始终允许
 ```
+
+- ❓ 行：待审批的工具和命令
+- 🦀 行：你的可选操作
 
 ### 📢 需要你查看
 

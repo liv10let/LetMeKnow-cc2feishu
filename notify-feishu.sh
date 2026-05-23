@@ -187,15 +187,15 @@ case "$EVENT" in
     fi
 
     MSG="🔐 $(build_header "需要审批")"
-    [ -n "$SAVED_PROMPT" ] && MSG="${MSG}
-❓ ${SAVED_PROMPT}"
     if [ -n "$SHORT_CMD" ]; then
         MSG="${MSG}
-🦀 ${TOOL}: ${SHORT_CMD}"
+❓ ${TOOL}: ${SHORT_CMD}"
     else
         MSG="${MSG}
-🦀 ${TOOL}"
+❓ ${TOOL}"
     fi
+    MSG="${MSG}
+🦀 允许 / 拒绝 / 始终允许"
     ;;
 
   *)
