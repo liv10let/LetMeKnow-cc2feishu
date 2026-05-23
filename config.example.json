@@ -1,0 +1,14 @@
+{
+  "feishu": {
+    "open_id": "ou_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  "activitywatch": {
+    "host": "localhost",
+    "port": 5600,
+    "user": "",
+    "pass": "",
+    "window_bucket": "aw-watcher-window_YOUR-HOSTNAME",
+    "afk_bucket": "aw-watcher-afk_YOUR-HOSTNAME"
+  },
+  "terminal_app": "WindowsTerminal.exe"
+}
