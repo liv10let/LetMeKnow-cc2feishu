@@ -35,7 +35,6 @@ if [ -n "$AW_USER" ] && [ "$AW_USER" != "null" ]; then
 fi
 
 GLOBAL_TOPIC_FILE="/tmp/lmk_window_topic"
-PENDING_MSG_FILE="/tmp/lmk_pending_msg"
 
 # ── Session isolation ────────────────────────────────────────
 get_session_key() {
@@ -56,10 +55,13 @@ get_session_key() {
 SESSION_KEY=$(get_session_key)
 TOPIC_FILE="/tmp/lmk_topic_${SESSION_KEY}"
 TASK_FILE="/tmp/lmk_task_${SESSION_KEY}"
+PROMPT_FILE="/tmp/lmk_prompt_${SESSION_KEY}"
+
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""' 2>/dev/null)
+CWD=$(echo "$INPUT" | jq -r '.cwd // ""' 2>/dev/null)
 
 # ── Helpers ──────────────────────────────────────────────────
 
-# Strip spinner prefix from CC window title to get stable topic
 extract_topic() {
     echo "$1" | sed 's/^[^ ]* //'
 }
@@ -68,8 +70,6 @@ aw_get() {
     curl -s $AW_AUTH_ARG "$1" --connect-timeout 2 2>/dev/null
 }
 
-# Returns 0 if user is actively watching this CC window (suppress notification)
-# Returns 1 if user is away (send notification)
 user_is_watching() {
     local topic_file="${1:-$TOPIC_FILE}"
     local expected_topic app title current_topic response
@@ -88,7 +88,6 @@ user_is_watching() {
     current_topic=$(extract_topic "$title")
     [ "$current_topic" != "$expected_topic" ] && return 1
 
-    # Window matches, but check AFK status
     if [ -n "$AW_AFK_BUCKET" ] && [ "$AW_AFK_BUCKET" != "null" ]; then
         local afk_response afk_status
         afk_response=$(aw_get "$AW_AFK_URL")
@@ -97,6 +96,18 @@ user_is_watching() {
     fi
 
     return 0
+}
+
+build_header() {
+    local label="$1"
+    local topic=$(cat "$GLOBAL_TOPIC_FILE" 2>/dev/null)
+    local display_path="$CWD"
+    [ -z "$display_path" ] || [ "$display_path" = "null" ] && display_path="$PROJECT"
+    if [ -n "$topic" ]; then
+        echo "[${display_path} | ${topic}] ${label}"
+    else
+        echo "[${display_path}] ${label}"
+    fi
 }
 
 send_feishu() {
@@ -110,6 +121,9 @@ send_feishu() {
 case "$EVENT" in
   user_prompt)
     echo "pending" > "$TASK_FILE"
+    PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""' 2>/dev/null)
+    echo "$PROMPT" > "$PROMPT_FILE"
+
     RESPONSE=$(aw_get "$AW_URL")
     APP=$(echo "$RESPONSE" | jq -r '.[0].data.app // ""' 2>/dev/null)
     TITLE=$(echo "$RESPONSE" | jq -r '.[0].data.title // ""' 2>/dev/null)
@@ -118,9 +132,9 @@ case "$EVENT" in
         echo "$TOPIC" > "$TOPIC_FILE"
         echo "$TOPIC" > "$GLOBAL_TOPIC_FILE"
     fi
-    # Cleanup stale session files (>24h)
     find /tmp -maxdepth 1 -name 'lmk_topic_*' -mmin +1440 -delete 2>/dev/null
     find /tmp -maxdepth 1 -name 'lmk_task_*' -mmin +1440 -delete 2>/dev/null
+    find /tmp -maxdepth 1 -name 'lmk_prompt_*' -mmin +1440 -delete 2>/dev/null
     exit 0
     ;;
 
@@ -132,65 +146,55 @@ case "$EVENT" in
 
     user_is_watching "$TOPIC_FILE" && exit 0
 
-    TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null | sed 's|\\|/|g')
-    LAST_Q=""
-    if [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
-        LAST_Q=$(grep -a '"type":"user"' "$TRANSCRIPT" | while IFS= read -r line; do
-            echo "$line" | jq -r 'select(.message.content | type == "string") | .message.content' 2>/dev/null
-        done | grep -v "^$\|^null$" | tail -1 | sed 's/^[└ │]*//' | cut -c1-60)
-    fi
+    SAVED_PROMPT=$(cat "$PROMPT_FILE" 2>/dev/null | cut -c1-200)
+    LAST_REPLY=$(echo "$INPUT" | jq -r '.last_assistant_message // ""' 2>/dev/null | tr '\n' ' ' | cut -c1-500)
 
-    # Write rich context for notification hook to pick up
-    echo "$(date +%s)|${LAST_Q}" > "$PENDING_MSG_FILE"
-    exit 0
+    MSG="📢 $(build_header "CC 已回复")"
+    [ -n "$SAVED_PROMPT" ] && MSG="${MSG}
+❓ ${SAVED_PROMPT}"
+    [ -n "$LAST_REPLY" ] && MSG="${MSG}
+🦀 ${LAST_REPLY}"
     ;;
 
   notification)
+    TASK_CONTENT=$(cat "$TASK_FILE" 2>/dev/null)
+    [ "$TASK_CONTENT" = "notified" ] && exit 0
+
     user_is_watching "$GLOBAL_TOPIC_FILE" && exit 0
 
-    if [ -f "$PENDING_MSG_FILE" ]; then
-        PENDING=$(cat "$PENDING_MSG_FILE")
-        PENDING_TS=$(echo "$PENDING" | cut -d'|' -f1)
-        PENDING_CONTENT=$(echo "$PENDING" | cut -d'|' -f2-)
-        NOW=$(date +%s)
-        if [ $((NOW - PENDING_TS)) -lt 10 ]; then
-            rm -f "$PENDING_MSG_FILE"
-            if [ -n "$PENDING_CONTENT" ]; then
-                MSG="📢 [${PROJECT}] CC 已回复
-└ ${PENDING_CONTENT}"
-            else
-                MSG="📢 [${PROJECT}] CC 已回复"
-            fi
-        fi
-    fi
+    SAVED_PROMPT=$(cat "$PROMPT_FILE" 2>/dev/null | cut -c1-200)
+    NOTIF=$(echo "$INPUT" | jq -r '.message // .title // ""' 2>/dev/null | cut -c1-200)
 
-    if [ -z "${MSG:-}" ]; then
-        NOTIF=$(echo "$INPUT" | jq -r '.message // .title // ""' 2>/dev/null)
-        if [ -n "$NOTIF" ] && [ "$NOTIF" != "null" ]; then
-            SHORT=$(echo "$NOTIF" | cut -c1-80)
-            MSG="📢 [${PROJECT}] 需要你查看
-└ ${SHORT}"
-        else
-            MSG="📢 [${PROJECT}] 有消息需要你查看"
-        fi
-    fi
+    MSG="📢 $(build_header "需要你查看")"
+    [ -n "$SAVED_PROMPT" ] && MSG="${MSG}
+❓ ${SAVED_PROMPT}"
+    [ -n "$NOTIF" ] && [ "$NOTIF" != "null" ] && MSG="${MSG}
+🦀 ${NOTIF}"
     ;;
 
   permission)
     user_is_watching "$GLOBAL_TOPIC_FILE" && exit 0
 
+    SAVED_PROMPT=$(cat "$PROMPT_FILE" 2>/dev/null | cut -c1-200)
     TOOL=$(echo "$INPUT" | jq -r '.tool_name // "未知工具"' 2>/dev/null)
     CMD=$(echo "$INPUT" | jq -r '
       .tool_input |
       .command // .file_path // .description // .path // ""
     ' 2>/dev/null)
+    SHORT_CMD=""
     if [ -n "$CMD" ] && [ "$CMD" != "null" ]; then
-        SHORT_CMD=$(echo "$CMD" | head -1 | cut -c1-80)
-        MSG="🔐 [${PROJECT}] 需要审批
-工具：${TOOL}
-内容：${SHORT_CMD}"
+        SHORT_CMD=$(echo "$CMD" | head -1 | cut -c1-200)
+    fi
+
+    MSG="🔐 $(build_header "需要审批")"
+    [ -n "$SAVED_PROMPT" ] && MSG="${MSG}
+❓ ${SAVED_PROMPT}"
+    if [ -n "$SHORT_CMD" ]; then
+        MSG="${MSG}
+🦀 ${TOOL}: ${SHORT_CMD}"
     else
-        MSG="🔐 [${PROJECT}] 需要审批：${TOOL}"
+        MSG="${MSG}
+🦀 ${TOOL}"
     fi
     ;;
 
