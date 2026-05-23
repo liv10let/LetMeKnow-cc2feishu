@@ -23,7 +23,7 @@ check_dep() {
 
 check_dep jq "Install: https://jqlang.github.io/jq/download/"
 check_dep curl "Install via your package manager."
-check_dep lark-cli "Install: npm install -g @aspect-build/lark-cli"
+check_dep lark-cli "Install: npm install -g @nichenqin/lark-cli"
 
 # ── Config ───────────────────────────────────────────────────
 mkdir -p "$CONFIG_DIR"

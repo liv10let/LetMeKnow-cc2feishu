@@ -189,6 +189,7 @@ Claude Code 会不断用 spinner 字符 + 对话主题更新终端标题（如 `
 
 ## 已知限制
 
+- **权限请求通过 Notification hook 发送**，而非 PermissionRequest — Claude Code 通过 Notification 通道发送 `"Claude needs your permission"` 消息。脚本检测该关键词后自动渲染为 🔐 格式。
 - **Notification/Permission hook** 不会从 Claude Code 接收会话标识符，因此使用全局 topic 文件做窗口匹配。在多 CC 并行场景下偶尔可能误判。
 - **AFK 检测**需要运行 `aw-watcher-afk`。未配置时只使用窗口匹配。
 - 需要 `lark-cli` 在 PATH 中。

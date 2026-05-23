@@ -190,6 +190,7 @@ Claude Code updates the terminal title with a spinner + conversation topic (e.g.
 
 ## Limitations
 
+- **Permission requests arrive via Notification hook**, not PermissionRequest — Claude Code sends `"Claude needs your permission"` through the Notification channel. The script detects this keyword and renders it as a 🔐 message.
 - **Notification/Permission hooks** don't receive session identifiers from Claude Code, so they use a global topic file for window matching. In multi-CC scenarios, this may occasionally misjudge.
 - **AFK detection** requires `aw-watcher-afk` running. Without it, only window matching is used.
 - Requires `lark-cli` in PATH.

@@ -310,13 +310,15 @@ lark-cli im +messages-send --as bot \
 
 ## 已知限制
 
-1. **Notification/Permission hook 没有会话标识** — Claude Code 不会把 session_id 传给这两种 hook，因此它们使用全局 topic 文件做窗口匹配。在多 CC 并行场景下，偶尔可能误判（把你在另一个 CC 窗口误认为在看当前 CC）。Stop hook 的去重和窗口匹配是完全按会话隔离的。
+1. **权限请求通过 Notification hook 发送** — Claude Code 实际上通过 Notification hook（而非 PermissionRequest hook）发送权限请求，消息内容为 "Claude needs your permission"。脚本会自动检测该关键词并转为 🔐 审批格式。PermissionRequest hook 作为后备保留。
 
-2. **AFK 检测依赖 aw-watcher-afk** — 如果没有运行 AFK watcher，只使用窗口匹配，不会判断你是否离开电脑。
+2. **Notification/Permission hook 没有会话标识** — Claude Code 不会把 session_id 传给这两种 hook，因此它们使用全局 topic 文件做窗口匹配。在多 CC 并行场景下，偶尔可能误判（把你在另一个 CC 窗口误认为在看当前 CC）。Stop hook 的去重和窗口匹配是完全按会话隔离的。
 
-3. **需要 lark-cli 在 PATH 中** — 脚本通过 lark-cli 发送消息，不直接管理飞书 token。
+3. **AFK 检测依赖 aw-watcher-afk** — 如果没有运行 AFK watcher，只使用窗口匹配，不会判断你是否离开电脑。
 
-4. **仅支持类 Unix shell** — 脚本使用 bash 编写，Windows 用户需要 Git Bash、WSL 或 MSYS2 环境。Claude Code 在 Windows 上默认使用 Git Bash，所以通常不需要额外配置。
+4. **需要 lark-cli 在 PATH 中** — 脚本通过 lark-cli 发送消息，不直接管理飞书 token。
+
+5. **仅支持类 Unix shell** — 脚本使用 bash 编写，Windows 用户需要 Git Bash、WSL 或 MSYS2 环境。Claude Code 在 Windows 上默认使用 Git Bash，所以通常不需要额外配置。
 
 ---
 
