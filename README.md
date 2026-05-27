@@ -64,9 +64,11 @@ Each CC session gets independent state files (`/tmp/lmk_topic_<session>`, `/tmp/
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (v1.0+)
+- [Node.js](https://nodejs.org/) (for lark-cli)
 - [lark-cli](https://github.com/nichenqin/lark-cli) — `npm install -g @nichenqin/lark-cli`
 - [jq](https://jqlang.github.io/jq/) — JSON processor
-- [ActivityWatch](https://activitywatch.net/) with window and AFK watchers running
+- curl
+- (Optional) [ActivityWatch](https://activitywatch.net/) with window and AFK watchers — enables smart suppression. Without it, all notifications are sent.
 
 ### ActivityWatch data source
 
@@ -145,6 +147,33 @@ lark-cli auth login
 
 You need a Feishu custom app with `im:message:send_as_bot` permission. See [Feishu Bot Guide](https://open.feishu.cn/document/home/develop-a-bot-in-5-minutes/create-an-app).
 
+After logging in, get your `open_id`:
+
+```bash
+lark-cli auth status
+# Look for "userOpenId": "ou_xxxxxxxx"
+```
+
+### ActivityWatch bucket names
+
+If you have ActivityWatch installed, find your bucket names:
+
+```bash
+curl -s http://localhost:5600/api/0/buckets | jq 'keys'
+```
+
+Look for entries like `aw-watcher-window_YOUR-HOSTNAME` and `aw-watcher-afk_YOUR-HOSTNAME`.
+
+### Verify
+
+Test that the Feishu channel works:
+
+```bash
+lark-cli im +messages-send --as bot --user-id "ou_your_open_id" --text "LetMeKnow test message"
+```
+
+You should receive a message in Feishu. If not, check that your app has the `im:message:send_as_bot` permission.
+
 ---
 
 ## Architecture
@@ -195,6 +224,14 @@ Claude Code updates the terminal title with a spinner + conversation topic (e.g.
 - **AFK detection** requires `aw-watcher-afk` running. Without it, only window matching is used.
 - Requires `lark-cli` in PATH.
 - Bash script — Windows users need Git Bash, WSL, or MSYS2. Claude Code on Windows uses Git Bash by default.
+
+---
+
+## Uninstall
+
+1. Remove the hooks from `~/.claude/settings.json` (delete the `UserPromptSubmit`, `Stop`, `Notification`, `PermissionRequest` entries under `hooks`)
+2. Delete the hook script: `rm ~/.claude/notify-feishu.sh`
+3. Delete the config: `rm -rf ~/.config/letmeknow`
 
 ---
 

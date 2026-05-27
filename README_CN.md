@@ -63,9 +63,11 @@ Claude Code 在关键事件时触发 [hook](https://docs.anthropic.com/en/docs/c
 ## 前置依赖
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)（v1.0+）
+- [Node.js](https://nodejs.org/)（lark-cli 依赖）
 - [lark-cli](https://github.com/nichenqin/lark-cli) — `npm install -g @nichenqin/lark-cli`
 - [jq](https://jqlang.github.io/jq/) — JSON 处理工具
-- [ActivityWatch](https://activitywatch.net/)，需运行 window 和 AFK watcher
+- curl
+- （可选）[ActivityWatch](https://activitywatch.net/)，需运行 window 和 AFK watcher — 用于智能静默。不安装的话所有通知都会发送。
 
 ### ActivityWatch 数据源
 
@@ -144,6 +146,33 @@ lark-cli auth login
 
 需要一个飞书自建应用，开通 `im:message:send_as_bot` 权限。参见[飞书机器人开发指南](https://open.feishu.cn/document/home/develop-a-bot-in-5-minutes/create-an-app)。
 
+登录后获取你的 `open_id`：
+
+```bash
+lark-cli auth status
+# 找 "userOpenId": "ou_xxxxxxxx"
+```
+
+### ActivityWatch bucket 名称
+
+如果安装了 ActivityWatch，查看你的 bucket 名称：
+
+```bash
+curl -s http://localhost:5600/api/0/buckets | jq 'keys'
+```
+
+找到类似 `aw-watcher-window_你的主机名` 和 `aw-watcher-afk_你的主机名` 的条目。
+
+### 验证安装
+
+测试飞书通道是否通畅：
+
+```bash
+lark-cli im +messages-send --as bot --user-id "ou_你的open_id" --text "LetMeKnow 测试消息"
+```
+
+你应该在飞书收到一条消息。如果没有，检查应用是否开通了 `im:message:send_as_bot` 权限。
+
 ---
 
 ## 架构设计
@@ -194,6 +223,14 @@ Claude Code 会不断用 spinner 字符 + 对话主题更新终端标题（如 `
 - **AFK 检测**需要运行 `aw-watcher-afk`。未配置时只使用窗口匹配。
 - 需要 `lark-cli` 在 PATH 中。
 - 脚本使用 bash 编写，Windows 用户需要 Git Bash、WSL 或 MSYS2。Claude Code 在 Windows 上默认使用 Git Bash，通常无需额外配置。
+
+---
+
+## 卸载
+
+1. 从 `~/.claude/settings.json` 的 `hooks` 中删除 `UserPromptSubmit`、`Stop`、`Notification`、`PermissionRequest` 条目
+2. 删除 hook 脚本：`rm ~/.claude/notify-feishu.sh`
+3. 删除配置：`rm -rf ~/.config/letmeknow`
 
 ---
 
